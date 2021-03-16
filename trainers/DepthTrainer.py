@@ -211,22 +211,22 @@ class KittiDepthTrainer(Trainer):
         times = AverageMeter()
 
         device = torch.device("cuda:" + str(self.params['gpu_id']) if torch.cuda.is_available() else "cpu")
-
         with torch.no_grad():
             for s in self.sets:
                 print('Evaluating on [{}] set, Epoch [{}] ! \n'.format(s, str(self.epoch - 1)))
                 # Iterate over data.
                 Start_time = time.time()
+                i = 0
                 # print(self.dataloaders[s])
                 for data in self.dataloaders[s]:
 
                     torch.cuda.synchronize()
                     start_time = time.time()
-
+                    # print("HERE")
                     inputs_d, C, labels, item_idxs, inputs_rgb = data
                     # print ("C: ", C)
                     # print ("item_idxs", item_idxs)
-                    # print ("Type RGB,Depth: ", type(inputs_rgb), type(inputs_d))
+                    print ("Shape RGB,Depth: ", inputs_rgb.shape, inputs_d.shape)
                     inputs_d = inputs_d.to(device)
                     C = C.to(device)
                     labels = labels.to(device)
@@ -282,21 +282,30 @@ class KittiDepthTrainer(Trainer):
 
                     # if s in ['test']:
                     outputs = outputs.data
+                    for output in range(outputs.size(0)):
+                    	# cv2.imshow('test', output.cpu().numpy())
+                    	# cv2.waitKey(1)
+                    	im = outputs[output, :, :, :].detach().data.cpu().numpy()
+                    	cv_img = np.transpose(im, (1, 2, 0)).astype(np.uint8)
+                    	# cv_img = cv2.normalize(src = output.cpu().numpy(), dst = None, alpha = 0, beta = 255, 
+					# norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+                    	cv_img = cv2.applyColorMap(cv_img, cv2.COLORMAP_JET)
 
-                    outputs *= 256
+                    	cv2.imwrite('/home/core_uc/depth_results_1/' + str(i) + '.png', cv_img)
+                    	i += 1
                     # print('/home/core_uc/depth_results' + '_output_' + 'epoch_' + str(self.epoch))
-                    saveTensorToImage(outputs, item_idxs, os.path.join('/home/core_uc/depth_results_' + str(
-                                                                               self.epoch)))
+                    # saveTensorToImage(outputs, item_idxs, os.path.join('/home/core_uc/depth_results_' + str(
+                                                                               # self.epoch)))
 
 
 
-                average_time = (time.time() - Start_time) / len(self.dataloaders[s].dataset)
+                # average_time = (time.time() - Start_time) / len(self.dataloaders[s].dataset)
 
                 print('Evaluation results on [{}]:\n============================='.format(s))
                 print('[{}]: {:.8f}'.format('Loss', loss_meter[s].avg))
                 for m in err_metrics: print('[{}]: {:.8f}'.format(m, err[m].avg))
                 print('[{}]: {:.4f}'.format('Time', times.avg))
-                print('[{}]: {:.4f}'.format('Time_av', average_time))
+                # print('[{}]: {:.4f}'.format('Time_av', average_time))
 
                 # Save evaluation metric to text file
                 fname = 'error_' + s + '_epoch_' + str(self.epoch - 1) + '.txt'

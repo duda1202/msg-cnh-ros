@@ -37,8 +37,8 @@ def KittiDataLoader(params):
     dataset_sizes = {}
     # print("HERE")
     ###### Training Set ######
-    train_data_path = os.path.join(ds_dir, "train/img")
-    train_gt_path = os.path.join(ds_dir, 'train/lbl')
+    train_data_path = os.path.join(ds_dir)
+    train_gt_path = os.path.join(ds_dir)
     # print(train_data_path)
     if params['transform_type'] == 'center':
         train_transform = transforms.Compose([transforms.CenterCrop((352, 1216))])
@@ -46,7 +46,7 @@ def KittiDataLoader(params):
         train_transform = None
 
     image_datasets['train'] = eval(dataset)(train_data_path, train_gt_path, setname='train',
-                                                transform=train_transform, norm_factor=norm_factor,
+                                                transform=None, norm_factor=norm_factor,
                                                 invert_depth=invert_depth,
                                                 rgb_dir=rgb_dir, rgb2gray=rgb2gray, fill_depth=fill_depth, flip=flip)
     # Select the desired number of images from the training set
@@ -60,7 +60,7 @@ def KittiDataLoader(params):
     ###### Validation Set ######
     val_data_path = os.path.join(ds_dir, 'valid/img')
     val_gt_path = os.path.join(ds_dir, 'valid/lbl')
-    val_transform = transforms.Compose([transforms.CenterCrop((352, 1216))])
+    val_transform = transforms.Compose([transforms.CenterCrop((720, 848))]) # Needs to be multiple of 16
 
     image_datasets['val'] = eval(dataset)(val_data_path, val_gt_path, setname='val', transform=val_transform,
                                               norm_factor=norm_factor, invert_depth=invert_depth,

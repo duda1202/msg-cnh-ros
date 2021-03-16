@@ -35,9 +35,9 @@ class KittiDepthDataset(Dataset):
         self.flip = flip
         self.blind = blind
 
-        self.data = list(sorted(glob.iglob(self.data_path + "/**/*.jpeg", recursive=True)))
+        self.data = list(sorted(glob.iglob(self.data_path + "/**/*.png", recursive=True)))
         self.gt = list(sorted(glob.iglob(self.gt_path + "/**/*.png", recursive=True)))
-        self.rgb = list(sorted(glob.iglob(self.rgb_dir + "/**/*.jpeg", recursive=True)))
+        self.rgb = list(sorted(glob.iglob(self.rgb_dir + "/**/*.png", recursive=True)))
         assert (len(self.gt) == len(self.data))
 
     def __len__(self):
@@ -75,11 +75,9 @@ class KittiDepthDataset(Dataset):
         #     sep = str(self.data[item]).split('/velodyne_raw/')
 
 
-
+        # print("length depth: ", len(self.data))
         # Read images and convert them to 4D floats
-        print(self.data[item])
         data = Image.open(str(self.data[item]))
-        print(type(data))
         gt = Image.open(str(self.gt[item]))
 
 
@@ -92,8 +90,9 @@ class KittiDepthDataset(Dataset):
             # print(idx)
             # fname = gt_path[idx:idx + 10]
             # print(fname)
+            # print("len rgb: ", len(self.rgb))
+
             rgb_path = self.rgb[item]
-            print(rgb_path)
             rgb = Image.open(rgb_path)
             
 
@@ -121,7 +120,7 @@ class KittiDepthDataset(Dataset):
 
         W, H = data.size
 
-
+        # print(W, H)
 
 
 
