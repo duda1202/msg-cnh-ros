@@ -35,11 +35,11 @@ def KittiDataLoader(params):
     image_datasets = {}
     dataloaders = {}
     dataset_sizes = {}
-
+    # print("HERE")
     ###### Training Set ######
-    train_data_path = os.path.join(ds_dir, 'data_depth_velodyne/train')
-    train_gt_path = os.path.join(ds_dir, 'data_depth_annotated/train')
-
+    train_data_path = os.path.join(ds_dir, "train/img")
+    train_gt_path = os.path.join(ds_dir, 'train/lbl')
+    # print(train_data_path)
     if params['transform_type'] == 'center':
         train_transform = transforms.Compose([transforms.CenterCrop((352, 1216))])
     else:
@@ -49,7 +49,6 @@ def KittiDataLoader(params):
                                                 transform=train_transform, norm_factor=norm_factor,
                                                 invert_depth=invert_depth,
                                                 rgb_dir=rgb_dir, rgb2gray=rgb2gray, fill_depth=fill_depth, flip=flip)
-
     # Select the desired number of images from the training set
     if params['train_on'] != 'full':
         image_datasets['train'].data = image_datasets['train'].data[0:params['train_on']]  # file directions
@@ -58,11 +57,9 @@ def KittiDataLoader(params):
     dataloaders['train'] = DataLoader(image_datasets['train'], shuffle=True, batch_size=params['train_batch_sz'],
                                       num_workers=num_worker)
     dataset_sizes['train'] = {len(image_datasets['train'])}
-
     ###### Validation Set ######
-    val_data_path = os.path.join(ds_dir, 'data_depth_velodyne/val')
-    val_gt_path = os.path.join(ds_dir, 'data_depth_annotated/val')
-
+    val_data_path = os.path.join(ds_dir, 'valid/img')
+    val_gt_path = os.path.join(ds_dir, 'valid/lbl')
     val_transform = transforms.Compose([transforms.CenterCrop((352, 1216))])
 
     image_datasets['val'] = eval(dataset)(val_data_path, val_gt_path, setname='val', transform=val_transform,
@@ -72,31 +69,31 @@ def KittiDataLoader(params):
                                     num_workers=num_worker)
     dataset_sizes['val'] = {len(image_datasets['val'])}
 
-    ###### Selected Validation set ######
-    selval_data_path = os.path.join(ds_dir, 'depth_selection/val_selection_cropped/velodyne_raw')
-    selval_gt_path = os.path.join(ds_dir, 'depth_selection/val_selection_cropped/groundtruth_depth')
+    # ###### Selected Validation set ######
+    # selval_data_path = os.path.join(ds_dir, 'depth_selection/val_selection_cropped/velodyne_raw')
+    # selval_gt_path = os.path.join(ds_dir, 'depth_selection/val_selection_cropped/groundtruth_depth')
 
-    image_datasets['selval'] = eval(dataset)(selval_data_path, selval_gt_path, setname='selval', transform=None,
-                                                 norm_factor=norm_factor, invert_depth=invert_depth,
-                                                 rgb_dir=rgb_dir, rgb2gray=rgb2gray, fill_depth=fill_depth, flip=flip)
+    # image_datasets['selval'] = eval(dataset)(selval_data_path, selval_gt_path, setname='selval', transform=None,
+    #                                              norm_factor=norm_factor, invert_depth=invert_depth,
+    #                                              rgb_dir=rgb_dir, rgb2gray=rgb2gray, fill_depth=fill_depth, flip=flip)
 
-    dataloaders['selval'] = DataLoader(image_datasets['selval'], shuffle=False, batch_size=params['test_batch_sz'],
-                                       num_workers=num_worker)
-    dataset_sizes['selval'] = {len(image_datasets['selval'])}
+    # dataloaders['selval'] = DataLoader(image_datasets['selval'], shuffle=False, batch_size=params['test_batch_sz'],
+    #                                    num_workers=num_worker)
+    # dataset_sizes['selval'] = {len(image_datasets['selval'])}
 
-    ###### Selected test set ######
-    test_data_path = os.path.join(ds_dir, 'depth_selection/test_depth_completion_anonymous/velodyne_raw')
-    test_gt_path = os.path.join(ds_dir, 'depth_selection/test_depth_completion_anonymous/velodyne_raw')
+    # ###### Selected test set ######
+    # test_data_path = os.path.join(ds_dir, 'depth_selection/test_depth_completion_anonymous/velodyne_raw')
+    # test_gt_path = os.path.join(ds_dir, 'depth_selection/test_depth_completion_anonymous/velodyne_raw')
 
-    image_datasets['test'] = eval(dataset)(test_data_path, test_gt_path, setname='test', transform=None,
-                                               norm_factor=norm_factor, invert_depth=invert_depth,
-                                               rgb_dir=rgb_dir, rgb2gray=rgb2gray, fill_depth=fill_depth)
+    # image_datasets['test'] = eval(dataset)(test_data_path, test_gt_path, setname='test', transform=None,
+    #                                            norm_factor=norm_factor, invert_depth=invert_depth,
+    #                                            rgb_dir=rgb_dir, rgb2gray=rgb2gray, fill_depth=fill_depth)
 
-    dataloaders['test'] = DataLoader(image_datasets['test'], shuffle=False, batch_size=params['test_batch_sz'],
-                                     num_workers=num_worker)
-    dataset_sizes['test'] = {len(image_datasets['test'])}
+    # dataloaders['test'] = DataLoader(image_datasets['test'], shuffle=False, batch_size=params['test_batch_sz'],
+    #                                  num_workers=num_worker)
+    # dataset_sizes['test'] = {len(image_datasets['test'])}
 
-    print(dataset_sizes)
+    print(dataloaders)
 
     return dataloaders, dataset_sizes
 

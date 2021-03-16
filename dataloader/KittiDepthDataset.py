@@ -35,9 +35,9 @@ class KittiDepthDataset(Dataset):
         self.flip = flip
         self.blind = blind
 
-        self.data = list(sorted(glob.iglob(self.data_path + "/**/*.png", recursive=True)))
+        self.data = list(sorted(glob.iglob(self.data_path + "/**/*.jpeg", recursive=True)))
         self.gt = list(sorted(glob.iglob(self.gt_path + "/**/*.png", recursive=True)))
-
+        self.rgb = list(sorted(glob.iglob(self.rgb_dir + "/**/*.jpeg", recursive=True)))
         assert (len(self.gt) == len(self.data))
 
     def __len__(self):
@@ -51,52 +51,59 @@ class KittiDepthDataset(Dataset):
         if self.setname == 'train' or self.setname == 'val':
             data_path = self.data[item].split(self.setname)[1]
             gt_path = self.gt[item].split(self.setname)[1]
+            # print(type(self.data[item]))
+            # assert (data_path[0:25] == gt_path[0:25])  # Check folder name
 
-            assert (data_path[0:25] == gt_path[0:25])  # Check folder name
+            data_path = data_path.split('/')[2]
+            gt_path = gt_path.split('/')[2]
 
-            data_path = data_path.split('image')[1]
-            gt_path = gt_path.split('image')[1]
+            data_path = data_path.split('.')[0]
+            gt_path = gt_path.split('.')[0]
 
             assert (data_path == gt_path)  # Check filename
 
             # Set the certainty path
-            sep = str(self.data[item]).split('data_depth_velodyne')
+            # sep = str(self.data[item])
+            sep = str(self.data[item]).split('/img/')
+            # print("SEP VALUE ", sep)
 
-        elif self.setname == 'selval':
-            data_path = self.data[item].split('00000')[1]
-            gt_path = self.gt[item].split('00000')[1]
-            assert (data_path == gt_path)
-            # Set the certainty path
-            sep = str(self.data[item]).split('/velodyne_raw/')
+        # elif self.setname == 'selval':
+        #     data_path = self.data[item].split('00000')[1]
+        #     gt_path = self.gt[item].split('00000')[1]
+        #     assert (data_path == gt_path)
+        #     # Set the certainty path
+        #     sep = str(self.data[item]).split('/velodyne_raw/')
 
 
 
         # Read images and convert them to 4D floats
+        print(self.data[item])
         data = Image.open(str(self.data[item]))
-
+        print(type(data))
         gt = Image.open(str(self.gt[item]))
 
 
 
         # Read RGB images
         if self.setname == 'train' or self.setname == 'val':
-            gt_path = str(self.gt[item])
-            idx = gt_path.find('2011')
-            day_dir = gt_path[idx:idx + 10]
-            idx2 = gt_path.find('groundtruth')
-            fname = gt_path[idx2 + 12:]
-            rgb_path = self.rgb_dir + '/' + day_dir + '/' + gt_path[idx:idx + 26] + '/' + fname[
-                                                                                          :8] + '/data/' + fname[9:]
-            rgb = Image.open(rgb_path)
 
-
-        elif self.setname == 'selval':
-            data_path = str(self.data[item])
-            idx = data_path.find('velodyne_raw')
-            fname = data_path[idx + 12:]
-            idx2 = fname.find('velodyne_raw')
-            rgb_path = data_path[:idx] + 'image' + fname[:idx2] + 'image' + fname[idx2 + 12:]
+            # gt_path = str(self.gt[item])
+            # idx = gt_path.find('/ngr_5classes')
+            # print(idx)
+            # fname = gt_path[idx:idx + 10]
+            # print(fname)
+            rgb_path = self.rgb[item]
+            print(rgb_path)
             rgb = Image.open(rgb_path)
+            
+
+        # elif self.setname == 'selval':
+        #     data_path = str(self.data[item])
+        #     idx = data_path.find('velodyne_raw')
+        #     fname = data_path[idx + 12:]
+        #     idx2 = fname.find('velodyne_raw')
+        #     rgb_path = data_path[:idx] + 'image' + fname[:idx2] + 'image' + fname[idx2 + 12:]
+        #     rgb = Image.open(rgb_path)
         elif self.setname == 'test':
             data_path = str(self.data[item])
             idx = data_path.find('velodyne_raw')
