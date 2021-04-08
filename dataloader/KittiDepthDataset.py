@@ -18,7 +18,7 @@ import glob
 import torchvision
 import random
 from torch.utils.data import DataLoader, Dataset
-
+import cv2
 
 class KittiDepthDataset(Dataset):
     def __init__(self, data_path, gt_path, setname='train', transform=None, norm_factor=256, invert_depth=False,
@@ -36,9 +36,9 @@ class KittiDepthDataset(Dataset):
         self.blind = blind
 
         self.data = list(sorted(glob.iglob(self.data_path + "/**/*.png", recursive=True)))
-        self.gt = list(sorted(glob.iglob(self.gt_path + "/**/*.png", recursive=True)))
+        # self.gt = list(sorted(glob.iglob(self.gt_path + "/**/*.png", recursive=True)))
         self.rgb = list(sorted(glob.iglob(self.rgb_dir + "/**/*.png", recursive=True)))
-        assert (len(self.gt) == len(self.data))
+        # assert (len(self.gt) == len(self.data))
 
     def __len__(self):
         return len(self.data)
@@ -50,17 +50,17 @@ class KittiDepthDataset(Dataset):
         # Check if Data filename is equal to GT filename
         if self.setname == 'train' or self.setname == 'val':
             data_path = self.data[item].split(self.setname)[1]
-            gt_path = self.gt[item].split(self.setname)[1]
+            # gt_path = self.gt[item].split(self.setname)[1]
             # print(type(self.data[item]))
             # assert (data_path[0:25] == gt_path[0:25])  # Check folder name
 
             data_path = data_path.split('/')[2]
-            gt_path = gt_path.split('/')[2]
+            # gt_path = gt_path.split('/')[2]
 
             data_path = data_path.split('.')[0]
-            gt_path = gt_path.split('.')[0]
+            # gt_path = gt_path.split('.')[0]
 
-            assert (data_path == gt_path)  # Check filename
+            # assert (data_path == gt_path)  # Check filename
 
             # Set the certainty path
             # sep = str(self.data[item])
@@ -78,7 +78,7 @@ class KittiDepthDataset(Dataset):
         # print("length depth: ", len(self.data))
         # Read images and convert them to 4D floats
         data = Image.open(str(self.data[item]))
-        gt = Image.open(str(self.gt[item]))
+        # gt = Image.open(str(self.gt[item]))
 
 
 
@@ -91,11 +91,18 @@ class KittiDepthDataset(Dataset):
             # fname = gt_path[idx:idx + 10]
             # print(fname)
             # print("len rgb: ", len(self.rgb))
-
+            # print(type(self.rgb))
             rgb_path = self.rgb[item]
+            # self.rgb[:, :, [0, 2]] = self.rgb[:, :, [2, 0]]
             rgb = Image.open(rgb_path)
-            
-
+            width, height = rgb.size
+            for x in range(0, width):
+                 for y in range(0,height):
+                    r, g, b = rgb.getpixel((x, y))
+                    rgb.putpixel((x, y), (b, g, r))
+                    # cv2.imwrite("/home/core_uc/rgn/image.png", (b,g,r))
+                    # cv2.imshow('test', np.array([b,g,r]))
+                    # cv2.waitKey(2)
         # elif self.setname == 'selval':
         #     data_path = str(self.data[item])
         #     idx = data_path.find('velodyne_raw')
@@ -127,7 +134,7 @@ class KittiDepthDataset(Dataset):
         # Apply transformations if given
         if self.transform is not None:
             data = self.transform(data)
-            gt = self.transform(gt)
+            # gt = self.transform(gt)
             rgb = self.transform(rgb)
         if self.transform is None and self.setname == 'train':
             crop_lt_u = random.randint(0, W - 1216)
@@ -145,7 +152,7 @@ class KittiDepthDataset(Dataset):
 
         # Convert to numpy
         data = np.array(data, dtype=np.float16)
-        gt = np.array(gt, dtype=np.float16)
+        # gt = np.array(gt, dtype=np.float16)
 
 
         #blind
@@ -159,16 +166,16 @@ class KittiDepthDataset(Dataset):
 
         # Normalize the data
         data = data / self.norm_factor  # [0,1]
-        gt = gt / self.norm_factor
+        # gt = gt / self.norm_factor
 
         # Expand dims into Pytorch format
         data = np.expand_dims(data, 0)
-        gt = np.expand_dims(gt, 0)
+        # gt = np.expand_dims(gt, 0)
         C = np.expand_dims(C, 0)
 
         # Convert to Pytorch Tensors
         data = torch.tensor(data, dtype=torch.float)
-        gt = torch.tensor(gt, dtype=torch.float)
+        # gt = torch.tensor(gt, dtype=torch.float)
         C = torch.tensor(C, dtype=torch.float)
 
         # Convert depth to disparity
@@ -189,5 +196,5 @@ class KittiDepthDataset(Dataset):
         else:
             rgb = np.transpose(rgb, (2, 0, 1))
         rgb = torch.tensor(rgb, dtype=torch.float)
-
+        gt = 0
         return data, C, gt, item, rgb

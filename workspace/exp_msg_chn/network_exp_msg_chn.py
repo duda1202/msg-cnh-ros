@@ -104,7 +104,6 @@ class RGBEncoder(nn.Module):
         x0 = self.init(input)
         if pre_x is not None:
             x0 = x0 + F.interpolate(pre_x, scale_factor=scale, mode='bilinear', align_corners=True)
-            print('x0: ', x0.shape)
         x1 = self.enc1(x0)  # 1/2 input size
         x2 = self.enc2(x1)  # 1/4 input size
         x3 = self.enc3(x2)  # 1/8 input size
@@ -149,7 +148,6 @@ class DepthDecoder(nn.Module):
 
         x2 = pre_dx[2] + pre_cx[2]  # torch.cat((pre_dx[2], pre_cx[2]), 1)
         x1 = pre_dx[1] + pre_cx[1]  # torch.cat((pre_dx[1], pre_cx[1]), 1) #
-        print(pre_dx[0].shape, pre_cx[0].shape)
         x0 = pre_dx[0] + pre_cx[0]
 
         x3 = self.dec2(x2)  # 1/2 input size
@@ -187,8 +185,6 @@ class network(nn.Module):
         ## for the 1/4 res
         input_d14 = F.avg_pool2d(input_d, 4, 4) / (F.avg_pool2d(C, 4, 4) + 0.0001)
         enc_d14 = self.depth_encoder1(input_d14)
-        for i, enc in enumerate(enc_d14):
-        	print(i, enc.shape)
         dcd_d14 = self.depth_decoder1(enc_d14, enc_c[2:6])
 
         ## for the 1/2 res
