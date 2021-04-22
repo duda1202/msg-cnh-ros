@@ -36,6 +36,7 @@ class KittiDepthDataset(Dataset):
         self.blind = blind
 
         self.data = list(sorted(glob.iglob(self.data_path + "/**/*.png", recursive=True)))
+        print(self.data)
         # self.gt = list(sorted(glob.iglob(self.gt_path + "/**/*.png", recursive=True)))
         self.rgb = list(sorted(glob.iglob(self.rgb_dir + "/**/*.png", recursive=True)))
         # assert (len(self.gt) == len(self.data))
@@ -110,12 +111,12 @@ class KittiDepthDataset(Dataset):
         #     idx2 = fname.find('velodyne_raw')
         #     rgb_path = data_path[:idx] + 'image' + fname[:idx2] + 'image' + fname[idx2 + 12:]
         #     rgb = Image.open(rgb_path)
-        elif self.setname == 'test':
-            data_path = str(self.data[item])
-            idx = data_path.find('velodyne_raw')
-            fname = data_path[idx + 12:]
-            rgb_path = data_path[:idx] + 'image/' + fname
-            rgb = Image.open(rgb_path)
+        # elif self.setname == 'test':
+        #     data_path = str(self.data[item])
+        #     idx = data_path.find('velodyne_raw')
+        #     fname = data_path[idx + 12:]
+        #     rgb_path = data_path[:idx] + 'image/' + fname
+        #     rgb = Image.open(rgb_path)
 
 
 
@@ -184,9 +185,9 @@ class KittiDepthDataset(Dataset):
             data = 1 / data
             data[data == -1] = 0
 
-            gt[gt == 0] = -1
-            gt = 1 / gt
-            gt[gt == -1] = 0
+            # gt[gt == 0] = -1
+            # gt = 1 / gt
+            # gt[gt == -1] = 0
 
         # Convert RGB image to tensor
         rgb = np.array(rgb, dtype=np.float16)

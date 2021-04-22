@@ -233,7 +233,7 @@ class KittiDepthTrainer(Trainer):
                     inputs_rgb = inputs_rgb.to(device)
 
                     outputs = self.net(inputs_d, inputs_rgb)
-
+                    outputi = outputs
 
                     if len(outputs) > 1:
                         outputs = outputs[0]
@@ -293,8 +293,24 @@ class KittiDepthTrainer(Trainer):
                     	
                     	cv_img = cv2.applyColorMap(cv_img, cv2.COLORMAP_JET)
                     	cv_img[:, :, [0, 2]] = cv_img[:, :, [2, 0]]
-                    	cv2.imwrite('/home/core_uc/depth_results_4/' + str(i) + '.png', cv_img)
+                    	cv2.imwrite('/home/core_uc/depth_results/' + str(i) + '.png', cv_img)
                     	i += 1
+
+
+                    for output in range(outputi[2].size(0)):
+                                                # cv2.imshow('test', output.cpu().numpy())
+                        # cv2.waitKey(1)
+                        im = outputs[output, :, :, :].detach().data.cpu().numpy()
+                        cv_img = np.transpose(im, (1, 2, 0)).astype(np.uint8)
+                        cv_img = cv2.normalize(src = cv_img, dst = None, alpha = 0, beta = 255, 
+                    norm_type=cv2.NORM_MINMAX)
+                        
+                        cv_img = cv2.applyColorMap(cv_img, cv2.COLORMAP_JET)
+                        cv_img[:, :, [0, 2]] = cv_img[:, :, [2, 0]]
+                        cv2.imwrite('/home/core_uc/depth_results/d11' + str(i) + '.png', cv_img)
+                        i += 1
+                        
+
                     # print('/home/core_uc/depth_results' + '_output_' + 'epoch_' + str(self.epoch))
                     # saveTensorToImage(outputs, item_idxs, os.path.join('/home/core_uc/depth_results_' + str(
                                                                                # self.epoch)))
