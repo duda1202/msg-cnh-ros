@@ -149,11 +149,11 @@ class DepthDecoder(nn.Module):
         x2 = pre_dx[2] + pre_cx[2]  # torch.cat((pre_dx[2], pre_cx[2]), 1)
         x1 = pre_dx[1] + pre_cx[1]  # torch.cat((pre_dx[1], pre_cx[1]), 1) #
         x0 = pre_dx[0] + pre_cx[0]
-        # Just RGB
+        # Just Depth
         # x2 = pre_dx[2]  # torch.cat((pre_dx[2], pre_cx[2]), 1)
         # x1 = pre_dx[1]   # torch.cat((pre_dx[1], pre_cx[1]), 1) #
         # x0 = pre_dx[0] 
-        # Just Depth
+        # Just RGB
         # x2 = pre_cx[2]  # torch.cat((pre_dx[2], pre_cx[2]), 1)
         # x1 = pre_cx[1]  # torch.cat((pre_dx[1], pre_cx[1]), 1) #
         # x0 = pre_cx[0]

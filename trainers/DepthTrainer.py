@@ -211,6 +211,7 @@ class KittiDepthTrainer(Trainer):
         times = AverageMeter()
 
         device = torch.device("cuda:" + str(self.params['gpu_id']) if torch.cuda.is_available() else "cpu")
+        print("CUDA ACTIVE: ", device)
         with torch.no_grad():
             for s in self.sets:
                 print('Evaluating on [{}] set, Epoch [{}] ! \n'.format(s, str(self.epoch - 1)))
@@ -219,14 +220,15 @@ class KittiDepthTrainer(Trainer):
                 i = 0
                 # print(self.dataloaders[s])
                 for data in self.dataloaders[s]:
-
+                    # time.sleep(5)
                     torch.cuda.synchronize()
                     start_time = time.time()
                     # print("HERE")
                     inputs_d, C, _, item_idxs, inputs_rgb = data
+
                     # print ("C: ", C)
                     # print ("item_idxs", item_idxs)
-                    print ("Shape RGB,Depth: ", inputs_rgb.shape, inputs_d.shape)
+                    print ("Shape RGB, Depth: ", inputs_rgb.shape, inputs_d.shape)
                     inputs_d = inputs_d.to(device)
                     C = C.to(device)
                     # labels = labels.to(device)
@@ -262,7 +264,8 @@ class KittiDepthTrainer(Trainer):
                     outputs[outputs == -1] = 0
                     # labels[labels == -1] = 0
                     # print(self.params['data_normalize_factor'] / 256)
-                    outputs *= self.params['data_normalize_factor'] / 256
+                    # outputs *= self.params['data_normalize_factor'] / 256
+                    # outputs = c
                     # labels *= self.params['data_normalize_factor'] / 256
 
                     # Calculate error metrics
@@ -293,10 +296,24 @@ class KittiDepthTrainer(Trainer):
                     	
                     	cv_img = cv2.applyColorMap(cv_img, cv2.COLORMAP_JET)
                     	cv_img[:, :, [0, 2]] = cv_img[:, :, [2, 0]]
-                    	cv2.imwrite('/home/core_uc/depth_results/' + str(i) + '.png', cv_img)
-                    	i += 1
+                    	cv2.imwrite('/home/core_uc/depth_results/' + str(i) + '.jpg', cv_img)
+                    	# i += 1
 
-
+                    # i = 0
+                    for output in range(outputi[1].size(0)):
+                                                # cv2.imshow('test', output.cpu().numpy())
+                        # cv2.waitKey(1)
+                        im = outputs[output, :, :, :].detach().data.cpu().numpy()
+                        cv_img = np.transpose(im, (1, 2, 0)).astype(np.uint8)
+                        cv_img = cv2.normalize(src = cv_img, dst = None, alpha = 0, beta = 255, 
+                    norm_type=cv2.NORM_MINMAX)
+                        
+                        cv_img = cv2.applyColorMap(cv_img, cv2.COLORMAP_JET)
+                        cv_img[:, :, [0, 2]] = cv_img[:, :, [2, 0]]
+                        cv2.imwrite('/home/core_uc/depth_results/d1_' + str(i) + '.jpg', cv_img)
+                        # i += 1
+                                            
+                    # i = 0
                     for output in range(outputi[2].size(0)):
                                                 # cv2.imshow('test', output.cpu().numpy())
                         # cv2.waitKey(1)
@@ -307,15 +324,22 @@ class KittiDepthTrainer(Trainer):
                         
                         cv_img = cv2.applyColorMap(cv_img, cv2.COLORMAP_JET)
                         cv_img[:, :, [0, 2]] = cv_img[:, :, [2, 0]]
-                        cv2.imwrite('/home/core_uc/depth_results/d11' + str(i) + '.png', cv_img)
-                        i += 1
+                        cv2.imwrite('/home/core_uc/depth_results/d2_' + str(i) + '.jpg', cv_img)
+                        
                         
 
-                    # print('/home/core_uc/depth_results' + '_output_' + 'epoch_' + str(self.epoch))
-                    # saveTensorToImage(outputs, item_idxs, os.path.join('/home/core_uc/depth_results_' + str(
+
+
+
+
+
+
+
+
+                    saveTensorToImage(outputs, item_idxs, os.path.join('/home/core_uc/depth_results_1/'))
                                                                                # self.epoch)))
-
-
+                    i += 1
+                    # time.sleep(2)
 
                 # average_time = (time.time() - Start_time) / len(self.dataloaders[s].dataset)
 

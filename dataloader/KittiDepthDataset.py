@@ -34,13 +34,14 @@ class KittiDepthDataset(Dataset):
         self.fill_depth = fill_depth
         self.flip = flip
         self.blind = blind
-
-        self.data = list(sorted(glob.iglob(self.data_path + "/**/*.png", recursive=True)))
-        print(self.data)
+        print("Depth dir: ", self.data_path)
+        print("RGB Dir: ", self.rgb_dir)
+        self.data = list(sorted(glob.iglob(self.data_path + "/*.png", recursive=True)))
+        print("Number of depth images: ", len(self.data))
         # self.gt = list(sorted(glob.iglob(self.gt_path + "/**/*.png", recursive=True)))
-        self.rgb = list(sorted(glob.iglob(self.rgb_dir + "/**/*.png", recursive=True)))
+        self.rgb = list(sorted(glob.iglob(self.rgb_dir + "/*.png", recursive=True)))
         # assert (len(self.gt) == len(self.data))
-
+        print("Number of rgb images: ", len(self.rgb))
     def __len__(self):
         return len(self.data)
 
@@ -49,23 +50,24 @@ class KittiDepthDataset(Dataset):
             return None
 
         # Check if Data filename is equal to GT filename
-        if self.setname == 'train' or self.setname == 'val':
-            data_path = self.data[item].split(self.setname)[1]
-            # gt_path = self.gt[item].split(self.setname)[1]
-            # print(type(self.data[item]))
-            # assert (data_path[0:25] == gt_path[0:25])  # Check folder name
+        # if self.setname == 'train' or self.setname == 'val':
+        #     data_path = self.data[item].split('/')[7]
+        #     # print(data_path)
+        #     # gt_path = self.gt[item].split(self.setname)[1]
+        #     # print(type(self.data[item]))
+        #     # assert (data_path[0:25] == gt_path[0:25])  # Check folder name
 
-            data_path = data_path.split('/')[2]
-            # gt_path = gt_path.split('/')[2]
-
-            data_path = data_path.split('.')[0]
-            # gt_path = gt_path.split('.')[0]
-
+        #     # data_path = data_path.split('/')[2]
+        #     # # gt_path = gt_path.split('/')[2]
+        #     # print(data_path)
+        #     # data_path = data_path.split('.')[0]
+        #     # gt_path = gt_path.split('.')[0]
+        #     print("NEW DATA PATH: ", data_path)
             # assert (data_path == gt_path)  # Check filename
 
             # Set the certainty path
             # sep = str(self.data[item])
-            sep = str(self.data[item]).split('/img/')
+            # sep = str(self.data[item]).split('/sun_depth/')
             # print("SEP VALUE ", sep)
 
         # elif self.setname == 'selval':
@@ -97,10 +99,10 @@ class KittiDepthDataset(Dataset):
             # self.rgb[:, :, [0, 2]] = self.rgb[:, :, [2, 0]]
             rgb = Image.open(rgb_path)
             width, height = rgb.size
-            for x in range(0, width):
-                 for y in range(0,height):
-                    r, g, b = rgb.getpixel((x, y))
-                    rgb.putpixel((x, y), (b, g, r))
+            # for x in range(0, width):
+            #      for y in range(0,height):
+            #         r, g, b = rgb.getpixel((x, y))
+            #         rgb.putpixel((x, y), (b, g, r))
                     # cv2.imwrite("/home/core_uc/rgn/image.png", (b,g,r))
                     # cv2.imshow('test', np.array([b,g,r]))
                     # cv2.waitKey(2)
@@ -152,7 +154,8 @@ class KittiDepthDataset(Dataset):
 
 
         # Convert to numpy
-        data = np.array(data, dtype=np.float16)
+        data = np.array(data, dtype=np.float64)
+        # print(data.shape)
         # gt = np.array(gt, dtype=np.float16)
 
 
@@ -164,13 +167,20 @@ class KittiDepthDataset(Dataset):
         # define the certainty
         C = (data > 0).astype(float)
 
-
+        print('*'*80)
         # Normalize the data
+        print("Depth values before normalization: ", data.max())
+        # data *= 1000
+
         data = data / self.norm_factor  # [0,1]
+        # data =  cv2.normalize(src = data, dst = None, alpha = 0, beta = 30, 
+                    # norm_type=cv2.NORM_MINMAX)
+        print("Depth values after normalization: ", data.max(), data.min())
         # gt = gt / self.norm_factor
 
         # Expand dims into Pytorch format
         data = np.expand_dims(data, 0)
+        # print("Depth shape: ", data.shape)
         # gt = np.expand_dims(gt, 0)
         C = np.expand_dims(C, 0)
 
@@ -190,8 +200,13 @@ class KittiDepthDataset(Dataset):
             # gt[gt == -1] = 0
 
         # Convert RGB image to tensor
+
         rgb = np.array(rgb, dtype=np.float16)
+        print("RGB values before normalization: ", rgb.max())
+
         rgb /= 255
+        print("RGB values after normalization: ", rgb.max())
+
         if self.rgb2gray:
             rgb = np.expand_dims(rgb, 0)
         else:

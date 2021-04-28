@@ -60,9 +60,9 @@ def KittiDataLoader(params):
     ###### Validation Set ######
     val_data_path = os.path.join(ds_dir, 'valid/img')
     val_gt_path = os.path.join(ds_dir, 'valid/lbl')
-    val_transform = transforms.Compose([transforms.CenterCrop((720, 848))]) # Needs to be multiple of 16
+    val_transform = transforms.Compose([transforms.CenterCrop((352, 1216))]) # Needs to be multiple of 16
 
-    image_datasets['val'] = eval(dataset)(val_data_path, val_gt_path, setname='val', transform=val_transform,
+    image_datasets['val'] = eval(dataset)(ds_dir, val_gt_path, setname='val', transform=val_transform,
                                               norm_factor=norm_factor, invert_depth=invert_depth,
                                               rgb_dir=rgb_dir, rgb2gray=rgb2gray, fill_depth=fill_depth, flip=flip)
     dataloaders['val'] = DataLoader(image_datasets['val'], shuffle=False, batch_size=params['val_batch_sz'],
