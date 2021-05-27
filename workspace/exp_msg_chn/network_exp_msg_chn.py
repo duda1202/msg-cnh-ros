@@ -191,7 +191,7 @@ class network(nn.Module):
 
         C = (input_d > 0).float()
         # print("\n\n\nDepth shape inside network: ", input_d.numel())
-        print("\n\n\nC shape inside network: ", C.shape)
+        # print("\n\n\nC shape inside network: ", C.shape)
 
         enc_c = self.rgb_encoder(input_rgb)
         ## for the 1/4 res
