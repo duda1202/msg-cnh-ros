@@ -34,6 +34,7 @@ class KittiDepthDataset(Dataset):
         self.fill_depth = fill_depth
         self.flip = flip
         self.blind = blind
+        self.i = 0
         print("Depth dir: ", self.data_path)
         print("RGB Dir: ", self.rgb_dir)
         self.data = list(sorted(glob.iglob(self.data_path + "/*.png", recursive=True)))
@@ -97,8 +98,8 @@ class KittiDepthDataset(Dataset):
             # print(type(self.rgb))
             rgb_path = self.rgb[item]
             # self.rgb[:, :, [0, 2]] = self.rgb[:, :, [2, 0]]
-            rgb = Image.open(rgb_path)
-            width, height = rgb.size
+            rgb = Image.open(str(rgb_path))
+            # width, height = rgb.size
             # for x in range(0, width):
             #      for y in range(0,height):
             #         r, g, b = rgb.getpixel((x, y))
@@ -139,43 +140,58 @@ class KittiDepthDataset(Dataset):
             data = self.transform(data)
             # gt = self.transform(gt)
             rgb = self.transform(rgb)
-        if self.transform is None and self.setname == 'train':
-            crop_lt_u = random.randint(0, W - 1216)
-            crop_lt_v = random.randint(0, H - 352)
-            data = data.crop((crop_lt_u, crop_lt_v, crop_lt_u+1216, crop_lt_v+352))
-            gt = gt.crop((crop_lt_u, crop_lt_v, crop_lt_u + 1216, crop_lt_v + 352))
-            rgb = rgb.crop((crop_lt_u, crop_lt_v, crop_lt_u + 1216, crop_lt_v + 352))
+        # if self.transform is None and self.setname == 'train':
+        #     crop_lt_u = random.randint(0, W - 1216)
+        #     crop_lt_v = random.randint(0, H - 352)
+        #     data = data.crop((crop_lt_u, crop_lt_v, crop_lt_u+1216, crop_lt_v+352))
+        #     gt = gt.crop((crop_lt_u, crop_lt_v, crop_lt_u + 1216, crop_lt_v + 352))
+        #     rgb = rgb.crop((crop_lt_u, crop_lt_v, crop_lt_u + 1216, crop_lt_v + 352))
 
 
-        if self.flip and random.randint(0, 1) and self.setname == 'train':
-            data = data.transpose(Image.FLIP_LEFT_RIGHT)
-            gt = gt.transpose(Image.FLIP_LEFT_RIGHT)
-            rgb = rgb.transpose(Image.FLIP_LEFT_RIGHT)
-
+        # if self.flip and random.randint(0, 1) and self.setname == 'train':
+        #     data = data.transpose(Image.FLIP_LEFT_RIGHT)
+        #     gt = gt.transpose(Image.FLIP_LEFT_RIGHT)
+        #     rgb = rgb.transpose(Image.FLIP_LEFT_RIGHT)
 
         # Convert to numpy
         data = np.array(data, dtype=np.float64)
-        # print(data.shape)
         # gt = np.array(gt, dtype=np.float16)
-
+        # w, h = data.shape
+        # y = int(h/3) 
+        # # Create new image with only the bottom half of the segmentation mask
+        # mask = cv2.imread("/home/core_uc/depth_completion/datasets/depth_pilot/depth/depth_1.png", cv2.IMREAD_ANYDEPTH)
+        # print(mask.shape)
+        # mask = cv2.resize(mask, (W,H))
+        # # mask = cv2.rectangle(mask, (0,y), (h,w), (255,255,255), cv2.FILLED)
+        # data = cv2.bitwise_and(data, mask)
+        # cv2.imread('test', data)
+        # cv2.waitKey(2)
+        # for x in range(0, w ):
+        #      for y in range(0,h):
+        #         if x % 2 == 0 or y % 2 == 0:
+        #             data[x,y] = 0
 
         #blind
-        if self.blind and (self.setname == 'train'):
-            blind_start = random.randint(100, H - 50)
-            data[blind_start:blind_start+50, :] = 0
+        # if self.blind and (self.setname == 'train'):
+        #     blind_start = random.randint(100, H - 50)
+        #     data[blind_start:blind_start+50, :] = 0
 
         # define the certainty
         C = (data > 0).astype(float)
 
         print('*'*80)
         # Normalize the data
-        print("Depth values before normalization: ", data.max())
+        # data =  cv2.normalize(src = data, dst = None, alpha = 0, beta = 65535, 
+                    # norm_type=cv2.NORM_MINMAX, dtype = cv2.CV_16U)
         # data *= 1000
-
+        # cv2.imwrite("/home/core_uc/test_" + str(self.i) + ".png", data)
+        self.i+=1
+        print("Depth max/min value before normalization: ", data.max(), data.min())
+        print("Depth Shape: ", data.shape)
         data = data / self.norm_factor  # [0,1]
-        # data =  cv2.normalize(src = data, dst = None, alpha = 0, beta = 30, 
+        # data =  cv2.normalize(src = data, dst = None, alpha = 0, beta = 70, 
                     # norm_type=cv2.NORM_MINMAX)
-        print("Depth values after normalization: ", data.max(), data.min())
+        print("Depth max/min value after normalization: ", data.max(), data.min())
         # gt = gt / self.norm_factor
 
         # Expand dims into Pytorch format
@@ -202,10 +218,11 @@ class KittiDepthDataset(Dataset):
         # Convert RGB image to tensor
 
         rgb = np.array(rgb, dtype=np.float16)
-        print("RGB values before normalization: ", rgb.max())
+        # print("RGB max value before normalization: ", rgb.max())
+        # print("RGB Shape: ", rgb.shape)
 
         rgb /= 255
-        print("RGB values after normalization: ", rgb.max())
+        # print("RGB max value after normalization: ", rgb.max())
 
         if self.rgb2gray:
             rgb = np.expand_dims(rgb, 0)

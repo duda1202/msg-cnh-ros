@@ -263,8 +263,10 @@ class KittiDepthTrainer(Trainer):
                         # labels = 1 / labels
                     outputs[outputs == -1] = 0
                     # labels[labels == -1] = 0
+                    # print(self.params['data_normalize_factor'] / 256)\
                     # print(self.params['data_normalize_factor'] / 256)
-                    # outputs *= self.params['data_normalize_factor'] / 256
+                    print("MAX Output value: ", outputs.max())
+                    outputs *= self.params['data_normalize_factor'] / 256
                     # outputs = c
                     # labels *= self.params['data_normalize_factor'] / 256
 
@@ -286,45 +288,47 @@ class KittiDepthTrainer(Trainer):
 
                     # if s in ['test']:
                     outputs = outputs.data
-                    for output in range(outputs.size(0)):
-                    	# cv2.imshow('test', output.cpu().numpy())
-                    	# cv2.waitKey(1)
-                    	im = outputs[output, :, :, :].detach().data.cpu().numpy()
-                    	cv_img = np.transpose(im, (1, 2, 0)).astype(np.uint8)
-                    	cv_img = cv2.normalize(src = cv_img, dst = None, alpha = 0, beta = 255, 
-					norm_type=cv2.NORM_MINMAX)
+                    # print(outputs)
+     #                for output in range(outputs.size(0)):
+     #                	# cv2.imshow('test', output.cpu().numpy())
+     #                	# cv2.waitKey(1)
+     #                    im = outputs[output, :, :, :].detach().data.cpu().numpy()
+     #                    cv_img = np.transpose(im, (1, 2, 0)).astype(np.uint8)
+     #                    # cv_img *= 256
+     #                    cv_img = cv2.normalize(src = cv_img, dst = None, alpha = 0, beta = 255, 
+					# norm_type=cv2.NORM_MINMAX)
                     	
-                    	cv_img = cv2.applyColorMap(cv_img, cv2.COLORMAP_JET)
-                    	cv_img[:, :, [0, 2]] = cv_img[:, :, [2, 0]]
-                    	cv2.imwrite('/home/core_uc/depth_results/' + str(i) + '.jpg', cv_img)
-                    	# i += 1
+     #                    cv_img = cv2.applyColorMap(cv_img, cv2.COLORMAP_JET)
+     #                    cv_img[:, :, [0, 2]] = cv_img[:, :, [2, 0]]
+     #                    cv2.imwrite('/home/core_uc/depth_results/' + str(i) + '.jpg', cv_img)
+     #                	# i += 1
 
-                    # i = 0
-                    for output in range(outputi[1].size(0)):
-                                                # cv2.imshow('test', output.cpu().numpy())
-                        # cv2.waitKey(1)
-                        im = outputs[output, :, :, :].detach().data.cpu().numpy()
-                        cv_img = np.transpose(im, (1, 2, 0)).astype(np.uint8)
-                        cv_img = cv2.normalize(src = cv_img, dst = None, alpha = 0, beta = 255, 
-                    norm_type=cv2.NORM_MINMAX)
+     #                # i = 0
+     #                for output in range(outputi[1].size(0)):
+     #                                            # cv2.imshow('test', output.cpu().numpy())
+     #                    # cv2.waitKey(1)
+     #                    im = outputs[output, :, :, :].detach().data.cpu().numpy()
+     #                    cv_img = np.transpose(im, (1, 2, 0)).astype(np.uint8)
+     #                    cv_img = cv2.normalize(src = cv_img, dst = None, alpha = 0, beta = 255, 
+     #                norm_type=cv2.NORM_MINMAX)
                         
-                        cv_img = cv2.applyColorMap(cv_img, cv2.COLORMAP_JET)
-                        cv_img[:, :, [0, 2]] = cv_img[:, :, [2, 0]]
-                        cv2.imwrite('/home/core_uc/depth_results/d1_' + str(i) + '.jpg', cv_img)
-                        # i += 1
+     #                    cv_img = cv2.applyColorMap(cv_img, cv2.COLORMAP_JET)
+     #                    cv_img[:, :, [0, 2]] = cv_img[:, :, [2, 0]]
+     #                    cv2.imwrite('/home/core_uc/depth_results/d1_' + str(i) + '.jpg', cv_img)
+     #                    # i += 1
                                             
-                    # i = 0
-                    for output in range(outputi[2].size(0)):
-                                                # cv2.imshow('test', output.cpu().numpy())
-                        # cv2.waitKey(1)
-                        im = outputs[output, :, :, :].detach().data.cpu().numpy()
-                        cv_img = np.transpose(im, (1, 2, 0)).astype(np.uint8)
-                        cv_img = cv2.normalize(src = cv_img, dst = None, alpha = 0, beta = 255, 
-                    norm_type=cv2.NORM_MINMAX)
+     #                # i = 0
+     #                for output in range(outputi[2].size(0)):
+     #                                            # cv2.imshow('test', output.cpu().numpy())
+     #                    # cv2.waitKey(1)
+     #                    im = outputs[output, :, :, :].detach().data.cpu().numpy()
+     #                    cv_img = np.transpose(im, (1, 2, 0)).astype(np.uint8)
+     #                    cv_img = cv2.normalize(src = cv_img, dst = None, alpha = 0, beta = 255, 
+     #                norm_type=cv2.NORM_MINMAX)
                         
-                        cv_img = cv2.applyColorMap(cv_img, cv2.COLORMAP_JET)
-                        cv_img[:, :, [0, 2]] = cv_img[:, :, [2, 0]]
-                        cv2.imwrite('/home/core_uc/depth_results/d2_' + str(i) + '.jpg', cv_img)
+     #                    cv_img = cv2.applyColorMap(cv_img, cv2.COLORMAP_JET)
+     #                    cv_img[:, :, [0, 2]] = cv_img[:, :, [2, 0]]
+     #                    cv2.imwrite('/home/core_uc/depth_results/d2_' + str(i) + '.jpg', cv_img)
                         
                         
 
@@ -336,7 +340,7 @@ class KittiDepthTrainer(Trainer):
 
 
 
-                    saveTensorToImage(outputs, item_idxs, os.path.join('/home/core_uc/depth_results_1/'))
+                    saveTensorToImage(outputs, item_idxs, os.path.join('/home/core_uc/depth_results_2/'))
                                                                                # self.epoch)))
                     i += 1
                     # time.sleep(2)
