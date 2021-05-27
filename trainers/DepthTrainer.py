@@ -135,7 +135,7 @@ class KittiDepthTrainer(Trainer):
                 C = C.to(device)
                 labels = labels.to(device)
                 inputs_rgb = inputs_rgb.to(device)
-
+                
                 outputs = self.net(inputs_d, inputs_rgb)
                 # Calculate loss for valid pixel in the ground truth
                 loss11 = self.objective(outputs[0], labels)
@@ -225,7 +225,7 @@ class KittiDepthTrainer(Trainer):
                     torch.cuda.synchronize()
                     start_time = time.time()
                     # print("HERE")
-                    inputs_d, C, _, item_idxs, inputs_rgb = data
+                    inputs_d, C, labels, item_idxs, inputs_rgb = data
 
                     # print ("C: ", C)
                     # print ("item_idxs", item_idxs)
@@ -263,8 +263,8 @@ class KittiDepthTrainer(Trainer):
                         outputs = 1 / outputs
                         labels = 1 / labels
                     outputs[outputs == -1] = 0
-                    # labels[labels == -1] = 0
-                    # print(self.params['data_normalize_factor'] / 256)\
+                    labels[labels == -1] = 0
+                    print(self.params['data_normalize_factor'] / 256)\
                     # print(self.params['data_normalize_factor'] / 256)
                     # print("MAX Output value: ", outputs.max())
                     outputs *= self.params['data_normalize_factor'] / 256
@@ -290,19 +290,19 @@ class KittiDepthTrainer(Trainer):
                     # if s in ['test']:
                     outputs = outputs.data
                     # print(outputs)
-     #                for output in range(outputs.size(0)):
-     #                	# cv2.imshow('test', output.cpu().numpy())
-     #                	# cv2.waitKey(1)
-     #                    im = outputs[output, :, :, :].detach().data.cpu().numpy()
-     #                    cv_img = np.transpose(im, (1, 2, 0)).astype(np.uint8)
-     #                    # cv_img *= 256
+                    for output in range(outputs.size(0)):
+                    	# cv2.imshow('test', output.cpu().numpy())
+                    	# cv2.waitKey(1)
+                        im = outputs[output, :, :, :].detach().data.cpu().numpy()
+                        cv_img = np.transpose(im, (1, 2, 0)).astype(np.uint8)
+                        cv_img *= 256
      #                    cv_img = cv2.normalize(src = cv_img, dst = None, alpha = 0, beta = 255, 
 					# norm_type=cv2.NORM_MINMAX)
                     	
-     #                    cv_img = cv2.applyColorMap(cv_img, cv2.COLORMAP_JET)
-     #                    cv_img[:, :, [0, 2]] = cv_img[:, :, [2, 0]]
-     #                    cv2.imwrite('/home/core_uc/depth_results/' + str(i) + '.jpg', cv_img)
-     #                	# i += 1
+                        cv_img = cv2.applyColorMap(cv_img, cv2.COLORMAP_JET)
+                        cv_img[:, :, [0, 2]] = cv_img[:, :, [2, 0]]
+                        cv2.imwrite('/home/core_uc/depth_results/' + str(i) + '.jpg', cv_img)
+                    	# i += 1
 
      #                # i = 0
      #                for output in range(outputi[1].size(0)):
@@ -346,23 +346,23 @@ class KittiDepthTrainer(Trainer):
                     i += 1
                     # time.sleep(2)
 
-                # average_time = (time.time() - Start_time) / len(self.dataloaders[s].dataset)
+                average_time = (time.time() - Start_time) / len(self.dataloaders[s].dataset)
 
-                # print('Evaluation results on [{}]:\n============================='.format(s))
-                # print('[{}]: {:.8f}'.format('Loss', loss_meter[s].avg))
-                # for m in err_metrics: print('[{}]: {:.8f}'.format(m, err[m].avg))
-                # print('[{}]: {:.4f}'.format('Time', times.avg))
-                # # print('[{}]: {:.4f}'.format('Time_av', average_time))
+                print('Evaluation results on [{}]:\n============================='.format(s))
+                print('[{}]: {:.8f}'.format('Loss', loss_meter[s].avg))
+                for m in err_metrics: print('[{}]: {:.8f}'.format(m, err[m].avg))
+                print('[{}]: {:.4f}'.format('Time', times.avg))
+                # print('[{}]: {:.4f}'.format('Time_av', average_time))
 
-                # # Save evaluation metric to text file
-                # fname = 'error_' + s + '_epoch_' + str(self.epoch - 1) + '.txt'
-                # with open(os.path.join(self.workspace_dir, fname), 'w') as text_file:
-                #     text_file.write(
-                #         'Evaluation results on [{}], Epoch [{}]:\n==========================================\n'.format(
-                #             s, str(self.epoch - 1)))
-                #     text_file.write('[{}]: {:.8f}\n'.format('Loss', loss_meter[s].avg))
-                #     for m in err_metrics: text_file.write('[{}]: {:.8f}\n'.format(m, err[m].avg))
-                #     text_file.write('[{}]: {:.4f}\n'.format('Time', times.avg))
+                # Save evaluation metric to text file
+                fname = 'error_' + s + '_epoch_' + str(self.epoch - 1) + '.txt'
+                with open(os.path.join(self.workspace_dir, fname), 'w') as text_file:
+                    text_file.write(
+                        'Evaluation results on [{}], Epoch [{}]:\n==========================================\n'.format(
+                            s, str(self.epoch - 1)))
+                    text_file.write('[{}]: {:.8f}\n'.format('Loss', loss_meter[s].avg))
+                    for m in err_metrics: text_file.write('[{}]: {:.8f}\n'.format(m, err[m].avg))
+                    text_file.write('[{}]: {:.4f}\n'.format('Time', times.avg))
 
                 torch.cuda.empty_cache()
 

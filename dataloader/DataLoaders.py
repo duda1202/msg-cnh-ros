@@ -37,14 +37,17 @@ def KittiDataLoader(params):
     dataset_sizes = {}
     # print("HERE")
     ###### Training Set ######
-    train_data_path = os.path.join(ds_dir, 'train/img')
-    train_gt_path = os.path.join(ds_dir, 'train/lbl')
-    train_rgb_path = os.path.join(ds_dir, 'train/rgb')
+    # train_data_path = os.path.join(ds_dir, 'train/img')
+    # train_gt_path = os.path.join(ds_dir, 'train/lbl')
+    # train_rgb_path = os.path.join(ds_dir, 'train/rgb')
+    train_data_path = os.path.join(ds_dir)
+    train_gt_path = os.path.join(ds_dir, 'gt')
+    train_rgb_path = os.path.join(rgb_dir)
 
     # print(train_data_path)
     if params['transform_type'] == 'center':
-        # train_transform = transforms.Compose([transforms.CenterCrop((352, 1216))])
-        train_transform = transforms.Compose([transforms.CenterCrop((528, 720))]) # Needs to be multiple of 16 -- sun rgbd
+        train_transform = transforms.Compose([transforms.CenterCrop((352, 1216))])
+        # train_transform = transforms.Compose([transforms.CenterCrop((528, 720))]) # Needs to be multiple of 16 -- sun rgbd
 
     else:
         train_transform = None
@@ -62,9 +65,12 @@ def KittiDataLoader(params):
                                       num_workers=num_worker)
     dataset_sizes['train'] = {len(image_datasets['train'])}
     ###### Validation Set ######
-    val_data_path = os.path.join(ds_dir, 'valid/img')
-    val_gt_path = os.path.join(ds_dir, 'valid/lbl')
-    val_rgb_path = os.path.join(ds_dir, 'valid/rgb')
+    # val_data_path = os.path.join(ds_dir, 'valid/img')
+    # val_gt_path = os.path.join(ds_dir, 'valid/lbl')
+    # val_rgb_path = os.path.join(ds_dir, 'valid/rgb')
+    val_data_path = os.path.join(ds_dir)
+    val_gt_path = os.path.join(ds_dir, 'gt')
+    val_rgb_path = os.path.join(rgb_dir)
 
     # val_transform = transforms.Compose([transforms.CenterCrop((720, 848))]) # Needs to be multiple of 16 -- semfire dataset
     val_transform = transforms.Compose([transforms.CenterCrop((528, 720))]) # Needs to be multiple of 16 -- sun rgbd
