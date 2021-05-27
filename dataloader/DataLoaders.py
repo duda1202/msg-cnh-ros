@@ -37,18 +37,22 @@ def KittiDataLoader(params):
     dataset_sizes = {}
     # print("HERE")
     ###### Training Set ######
-    train_data_path = os.path.join(ds_dir)
-    train_gt_path = os.path.join(ds_dir)
+    train_data_path = os.path.join(ds_dir, 'train/img')
+    train_gt_path = os.path.join(ds_dir, 'train/lbl')
+    train_rgb_path = os.path.join(ds_dir, 'train/rgb')
+
     # print(train_data_path)
     if params['transform_type'] == 'center':
-        train_transform = transforms.Compose([transforms.CenterCrop((352, 1216))])
+        # train_transform = transforms.Compose([transforms.CenterCrop((352, 1216))])
+        train_transform = transforms.Compose([transforms.CenterCrop((528, 720))]) # Needs to be multiple of 16 -- sun rgbd
+
     else:
         train_transform = None
 
     image_datasets['train'] = eval(dataset)(train_data_path, train_gt_path, setname='train',
-                                                transform=None, norm_factor=norm_factor,
+                                                transform=train_transform, norm_factor=norm_factor,
                                                 invert_depth=invert_depth,
-                                                rgb_dir=rgb_dir, rgb2gray=rgb2gray, fill_depth=fill_depth, flip=flip)
+                                                rgb_dir=train_rgb_path, rgb2gray=rgb2gray, fill_depth=fill_depth, flip=flip)
     # Select the desired number of images from the training set
     if params['train_on'] != 'full':
         image_datasets['train'].data = image_datasets['train'].data[0:params['train_on']]  # file directions
@@ -60,14 +64,16 @@ def KittiDataLoader(params):
     ###### Validation Set ######
     val_data_path = os.path.join(ds_dir, 'valid/img')
     val_gt_path = os.path.join(ds_dir, 'valid/lbl')
+    val_rgb_path = os.path.join(ds_dir, 'valid/rgb')
+
     # val_transform = transforms.Compose([transforms.CenterCrop((720, 848))]) # Needs to be multiple of 16 -- semfire dataset
-    # val_transform = transforms.Compose([transforms.CenterCrop((528, 720))]) # Needs to be multiple of 16 -- sun rgbd
-    val_transform = transforms.Compose([transforms.CenterCrop((352, 1216))]) # Needs to be multiple of 16 -- kitti dataset
+    val_transform = transforms.Compose([transforms.CenterCrop((528, 720))]) # Needs to be multiple of 16 -- sun rgbd
+    # val_transform = transforms.Compose([transforms.CenterCrop((352, 1216))]) # Needs to be multiple of 16 -- kitti dataset
     # val_transform = transforms.Compose([transforms.CenterCrop((352, 1216))]) # Needs to be multiple of 16 -- kitti dataset
 
-    image_datasets['val'] = eval(dataset)(ds_dir, val_gt_path, setname='val', transform=val_transform,
+    image_datasets['val'] = eval(dataset)(val_data_path, val_gt_path, setname='val', transform=val_transform,
                                               norm_factor=norm_factor, invert_depth=invert_depth,
-                                              rgb_dir=rgb_dir, rgb2gray=rgb2gray, fill_depth=fill_depth, flip=flip)
+                                              rgb_dir=val_rgb_path, rgb2gray=rgb2gray, fill_depth=fill_depth, flip=flip)
     dataloaders['val'] = DataLoader(image_datasets['val'], shuffle=False, batch_size=params['val_batch_sz'],
                                     num_workers=num_worker)
     dataset_sizes['val'] = {len(image_datasets['val'])}

@@ -36,7 +36,7 @@ class KittiDepthTrainer(Trainer):
         self.lr_scheduler = lr_scheduler
         self.dataloaders = dataloaders
         self.dataset_sizes = dataset_sizes
-        self.use_load_checkpoint = use_load_checkpoint
+        self.use_load_checkpoint = None
 
         self.params = params
         self.save_chkpt_each = params['save_chkpt_each']
@@ -86,7 +86,9 @@ class KittiDepthTrainer(Trainer):
             self.epoch = epoch
 
             # Decay Learning Rate
-            self.lr_scheduler.step()  # LR decay
+            # backward + optimize only if in training phase
+            self.optimizer.step()
+            self.optimizer.zero_grad()
 
             print('\nTraining Epoch {}: (lr={}) '.format(epoch, self.optimizer.param_groups[0]['lr']))  # , end=' '
 
@@ -146,11 +148,10 @@ class KittiDepthTrainer(Trainer):
                     loss = 0.1 * loss14 + 0.1 * loss12 + loss11
                 else:
                     loss = loss11
-
-                # backward + optimize only if in training phase
                 loss.backward()
-                self.optimizer.step()
-                self.optimizer.zero_grad()
+
+                self.lr_scheduler.step()  # LR decay
+
 
 
                 # statistics
@@ -231,7 +232,7 @@ class KittiDepthTrainer(Trainer):
                     print ("Shape RGB, Depth: ", inputs_rgb.shape, inputs_d.shape)
                     inputs_d = inputs_d.to(device)
                     C = C.to(device)
-                    # labels = labels.to(device)
+                    labels = labels.to(device)
                     inputs_rgb = inputs_rgb.to(device)
 
                     outputs = self.net(inputs_d, inputs_rgb)
@@ -247,42 +248,42 @@ class KittiDepthTrainer(Trainer):
                     # if s == 'val' or s == 'test':
 
                         # Calculate loss for valid pixel in the ground truth
-                    # loss = self.objective(outputs, labels, self.epoch)
+                    loss = self.objective(outputs, labels, self.epoch)
 
                     # statistics
-                    # loss_meter[s].update(loss.item(), inputs_d.size(0))
+                    loss_meter[s].update(loss.item(), inputs_d.size(0))
 
 
                     # Convert data to depth in meters before error metrics
                     outputs[outputs == 0] = -1
                     if not self.load_rgb:
                         outputs[outputs == outputs[0, 0, 0, 0]] = -1
-                    # labels[labels == 0] = -1
+                    labels[labels == 0] = -1
                     if self.params['invert_depth']:
                         outputs = 1 / outputs
-                        # labels = 1 / labels
+                        labels = 1 / labels
                     outputs[outputs == -1] = 0
                     # labels[labels == -1] = 0
                     # print(self.params['data_normalize_factor'] / 256)\
                     # print(self.params['data_normalize_factor'] / 256)
-                    print("MAX Output value: ", outputs.max())
+                    # print("MAX Output value: ", outputs.max())
                     outputs *= self.params['data_normalize_factor'] / 256
                     # outputs = c
-                    # labels *= self.params['data_normalize_factor'] / 256
+                    labels *= self.params['data_normalize_factor'] / 256
 
                     # Calculate error metrics
-                    # for m in err_metrics:
-                    #     if m.find('Delta') >= 0:
-                    #         fn = globals()['Deltas']()
-                    #         error = fn(outputs, labels)
-                    #         err['Delta1'].update(error[0], inputs_d.size(0))
-                    #         err['Delta2'].update(error[1], inputs_d.size(0))
-                    #         err['Delta3'].update(error[2], inputs_d.size(0))
-                    #         break
-                    #     else:
-                    #         fn = eval(m)  # globals()[m]()
-                    #         error = fn(outputs, labels)
-                    #         err[m].update(error.item(), inputs_d.size(0))
+                    for m in err_metrics:
+                        if m.find('Delta') >= 0:
+                            fn = globals()['Deltas']()
+                            error = fn(outputs, labels)
+                            err['Delta1'].update(error[0], inputs_d.size(0))
+                            err['Delta2'].update(error[1], inputs_d.size(0))
+                            err['Delta3'].update(error[2], inputs_d.size(0))
+                            break
+                        else:
+                            fn = eval(m)  # globals()[m]()
+                            error = fn(outputs, labels)
+                            err[m].update(error.item(), inputs_d.size(0))
 
                     # Save output images (optional)
 
