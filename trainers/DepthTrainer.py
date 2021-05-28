@@ -27,7 +27,7 @@ err_metrics = ['MAE()', 'RMSE()','iMAE()', 'iRMSE()']
 
 class KittiDepthTrainer(Trainer):
     def __init__(self, net, params, optimizer, objective, lr_scheduler, dataloaders, dataset_sizes,
-                 workspace_dir, sets=['train', 'val'], use_load_checkpoint=None, K= None):
+                 workspace_dir, sets=['train', 'val'], use_load_checkpoint=None, K= None, weights = [1.0, 1.0], count = 'a'):
 
         # Call the constructor of the parent class (trainer)
         super(KittiDepthTrainer, self).__init__(net, optimizer, lr_scheduler, objective, use_gpu=params['use_gpu'],
@@ -36,15 +36,15 @@ class KittiDepthTrainer(Trainer):
         self.lr_scheduler = lr_scheduler
         self.dataloaders = dataloaders
         self.dataset_sizes = dataset_sizes
-        self.use_load_checkpoint = None
-
+        self.use_load_checkpoint = use_load_checkpoint
         self.params = params
         self.save_chkpt_each = params['save_chkpt_each']
         self.sets = sets
         self.save_images = params['save_out_imgs']
         self.load_rgb = params['load_rgb'] if 'load_rgb' in params else False
-
+        self.weights = weights
         self.exp_name = params['exp_name']
+        self.count = count
 
         for s in self.sets: self.stats[s + '_loss'] = []
 
@@ -87,8 +87,8 @@ class KittiDepthTrainer(Trainer):
 
             # Decay Learning Rate
             # backward + optimize only if in training phase
-            self.optimizer.step()
-            self.optimizer.zero_grad()
+            self.lr_scheduler.step()  # LR decay
+
 
             print('\nTraining Epoch {}: (lr={}) '.format(epoch, self.optimizer.param_groups[0]['lr']))  # , end=' '
 
@@ -130,13 +130,13 @@ class KittiDepthTrainer(Trainer):
             # Iterate over data.
             for data in self.dataloaders[s]:
                 start_iter_time = time.time()
-                inputs_d, C, labels, item_idxs, inputs_rgb = data
+                inputs_d, C, labels, item_idxs, inputs_rgb, flag_save_image = data
                 inputs_d = inputs_d.to(device)
                 C = C.to(device)
                 labels = labels.to(device)
                 inputs_rgb = inputs_rgb.to(device)
                 
-                outputs = self.net(inputs_d, inputs_rgb)
+                outputs = self.net(inputs_d, inputs_rgb, self.weights)
                 # Calculate loss for valid pixel in the ground truth
                 loss11 = self.objective(outputs[0], labels)
                 loss12 = self.objective(outputs[1], labels)
@@ -144,14 +144,17 @@ class KittiDepthTrainer(Trainer):
 
                 if self.epoch < 6:
                     loss = loss14 + loss12 + loss11
+
                 elif self.epoch < 11:
                     loss = 0.1 * loss14 + 0.1 * loss12 + loss11
                 else:
                     loss = loss11
+
+                print("Epoch loss: ", loss)
                 loss.backward()
 
-                self.lr_scheduler.step()  # LR decay
-
+                self.optimizer.step()
+                self.optimizer.zero_grad()
 
 
                 # statistics
@@ -225,17 +228,13 @@ class KittiDepthTrainer(Trainer):
                     torch.cuda.synchronize()
                     start_time = time.time()
                     # print("HERE")
-                    inputs_d, C, labels, item_idxs, inputs_rgb = data
-
-                    # print ("C: ", C)
-                    # print ("item_idxs", item_idxs)
-                    print ("Shape RGB, Depth: ", inputs_rgb.shape, inputs_d.shape)
+                    inputs_d, C, labels, item_idxs, inputs_rgb, flag_save_image = data
                     inputs_d = inputs_d.to(device)
                     C = C.to(device)
                     labels = labels.to(device)
                     inputs_rgb = inputs_rgb.to(device)
 
-                    outputs = self.net(inputs_d, inputs_rgb)
+                    outputs = self.net(inputs_d, inputs_rgb, self.weights)
                     outputi = outputs
 
                     if len(outputs) > 1:
@@ -249,10 +248,10 @@ class KittiDepthTrainer(Trainer):
 
                         # Calculate loss for valid pixel in the ground truth
                     loss = self.objective(outputs, labels, self.epoch)
-
+                    # print("Evaluation Loss values: ", loss)
                     # statistics
                     loss_meter[s].update(loss.item(), inputs_d.size(0))
-
+                    # torch.autograd.detect_anomaly()
 
                     # Convert data to depth in meters before error metrics
                     outputs[outputs == 0] = -1
@@ -264,11 +263,8 @@ class KittiDepthTrainer(Trainer):
                         labels = 1 / labels
                     outputs[outputs == -1] = 0
                     labels[labels == -1] = 0
-                    print(self.params['data_normalize_factor'] / 256)\
-                    # print(self.params['data_normalize_factor'] / 256)
-                    # print("MAX Output value: ", outputs.max())
+
                     outputs *= self.params['data_normalize_factor'] / 256
-                    # outputs = c
                     labels *= self.params['data_normalize_factor'] / 256
 
                     # Calculate error metrics
@@ -290,60 +286,24 @@ class KittiDepthTrainer(Trainer):
                     # if s in ['test']:
                     outputs = outputs.data
                     # print(outputs)
-                    for output in range(outputs.size(0)):
-                    	# cv2.imshow('test', output.cpu().numpy())
-                    	# cv2.waitKey(1)
-                        im = outputs[output, :, :, :].detach().data.cpu().numpy()
-                        cv_img = np.transpose(im, (1, 2, 0)).astype(np.uint8)
-                        cv_img *= 256
-     #                    cv_img = cv2.normalize(src = cv_img, dst = None, alpha = 0, beta = 255, 
-					# norm_type=cv2.NORM_MINMAX)
-                    	
-                        cv_img = cv2.applyColorMap(cv_img, cv2.COLORMAP_JET)
-                        cv_img[:, :, [0, 2]] = cv_img[:, :, [2, 0]]
-                        cv2.imwrite('/home/core_uc/depth_results/' + str(i) + '.jpg', cv_img)
+                    if flag_save_image:
+                        for output in range(outputs.size(0)):
+
+                            im = outputs[output, :, :, :].detach().data.cpu().numpy()
+                            cv_img = np.transpose(im, (1, 2, 0)).astype(np.uint8)
+                            # cv_img *= 256
+                            cv_img = cv2.normalize(src = cv_img, dst = None, alpha = 0, beta = 255, 
+    					norm_type=cv2.NORM_MINMAX)
+                        	
+                            cv_img = cv2.applyColorMap(cv_img, cv2.COLORMAP_JET)
+                            cv_img[:, :, [0, 2]] = cv_img[:, :, [2, 0]]
+                            cv2.imwrite('/home/core_uc/depth_results/' + self.count + '.jpg', cv_img)
                     	# i += 1
-
-     #                # i = 0
-     #                for output in range(outputi[1].size(0)):
-     #                                            # cv2.imshow('test', output.cpu().numpy())
-     #                    # cv2.waitKey(1)
-     #                    im = outputs[output, :, :, :].detach().data.cpu().numpy()
-     #                    cv_img = np.transpose(im, (1, 2, 0)).astype(np.uint8)
-     #                    cv_img = cv2.normalize(src = cv_img, dst = None, alpha = 0, beta = 255, 
-     #                norm_type=cv2.NORM_MINMAX)
-                        
-     #                    cv_img = cv2.applyColorMap(cv_img, cv2.COLORMAP_JET)
-     #                    cv_img[:, :, [0, 2]] = cv_img[:, :, [2, 0]]
-     #                    cv2.imwrite('/home/core_uc/depth_results/d1_' + str(i) + '.jpg', cv_img)
-     #                    # i += 1
-                                            
-     #                # i = 0
-     #                for output in range(outputi[2].size(0)):
-     #                                            # cv2.imshow('test', output.cpu().numpy())
-     #                    # cv2.waitKey(1)
-     #                    im = outputs[output, :, :, :].detach().data.cpu().numpy()
-     #                    cv_img = np.transpose(im, (1, 2, 0)).astype(np.uint8)
-     #                    cv_img = cv2.normalize(src = cv_img, dst = None, alpha = 0, beta = 255, 
-     #                norm_type=cv2.NORM_MINMAX)
-                        
-     #                    cv_img = cv2.applyColorMap(cv_img, cv2.COLORMAP_JET)
-     #                    cv_img[:, :, [0, 2]] = cv_img[:, :, [2, 0]]
-     #                    cv2.imwrite('/home/core_uc/depth_results/d2_' + str(i) + '.jpg', cv_img)
-                        
-                        
-
-
-
-
-
-
-
 
 
                     saveTensorToImage(outputs, item_idxs, os.path.join('/home/core_uc/depth_results_2/'))
                                                                                # self.epoch)))
-                    i += 1
+                    # i += 1
                     # time.sleep(2)
 
                 average_time = (time.time() - Start_time) / len(self.dataloaders[s].dataset)
@@ -355,11 +315,14 @@ class KittiDepthTrainer(Trainer):
                 # print('[{}]: {:.4f}'.format('Time_av', average_time))
 
                 # Save evaluation metric to text file
-                fname = 'error_' + s + '_epoch_' + str(self.epoch - 1) + '.txt'
-                with open(os.path.join(self.workspace_dir, fname), 'w') as text_file:
+                fname = '/home/core_uc/results_ablation_study/error_ablation_study_kitti.txt'
+                with open(os.path.join(self.workspace_dir, fname), 'a') as text_file:
                     text_file.write(
-                        'Evaluation results on [{}], Epoch [{}]:\n==========================================\n'.format(
-                            s, str(self.epoch - 1)))
+                        '\nEvaluation results on [{}], KITTI [{}]:\n==========================================\n'.format(
+                            s, str(self.count)))
+                    text_file.write('[{}]: {:.8f}\n'.format('RGB Weight', self.weights[0]))
+                    text_file.write('[{}]: {:.8f}\n'.format('Depth Weight', self.weights[1]))
+
                     text_file.write('[{}]: {:.8f}\n'.format('Loss', loss_meter[s].avg))
                     for m in err_metrics: text_file.write('[{}]: {:.8f}\n'.format(m, err[m].avg))
                     text_file.write('[{}]: {:.4f}\n'.format('Time', times.avg))

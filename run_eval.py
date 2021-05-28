@@ -112,14 +112,21 @@ optimizer = getattr(optim, params['optimizer'])(parameters, lr=params['lr'],
 # lr_decay = lr_scheduler.MultiStepLR(optimizer, milestones=params['lr_decay_step'], gamma=params['lr_decay']) #
 lr_decay = lr_scheduler.StepLR(optimizer, step_size=params['lr_decay_step'], gamma=params['lr_decay'])
 
-mytrainer = t.KittiDepthTrainer(model, params, optimizer, objective, lr_decay, dataloaders, dataset_sizes,
-                                    workspace_dir=exp_dir, sets=sets, use_load_checkpoint=args.chkpt)
+weights = [1.0, 0.0] # rgb, depth
+count = 21
+while weights[1] < 2.0:
+    mytrainer = t.KittiDepthTrainer(model, params, optimizer, objective, lr_decay, dataloaders, dataset_sizes,
+                                        workspace_dir=exp_dir, sets=sets, use_load_checkpoint=args.chkpt, weights = weights, count = "kitti_" + str(count))
 
-if mode == 'train':
-    # train the network
-    net = mytrainer.train(params['num_epochs'])  #
-else:
-    net = mytrainer.evaluate()
+    if mode == 'train':
+        # train the network
+        net = mytrainer.train(params['num_epochs'])  #
+    else:
+        net = mytrainer.evaluate()
+    weights[1] += 0.1
+    count += 1
+
+
 
 
 

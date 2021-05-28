@@ -41,7 +41,7 @@ class KittiDepthDataset(Dataset):
         print("Lbl Dir: ", self.gt_path)
         self.data = list(sorted(glob.iglob(self.data_path + "/*.png", recursive=True)))
         self.gt = list(sorted(glob.iglob(self.gt_path + "/*.png", recursive=True)))
-        self.rgb = list(sorted(glob.iglob(self.rgb_dir + "/*.jpg", recursive=True)))
+        self.rgb = list(sorted(glob.iglob(self.rgb_dir + "/*.png", recursive=True)))
         assert (len(self.gt) == len(self.data))
         print("Number of depth images: ", len(self.data))
         print("Number of rgb images: ", len(self.rgb))
@@ -64,6 +64,7 @@ class KittiDepthDataset(Dataset):
         if self.setname == 'train' or self.setname == 'val':
 
             rgb_path = self.rgb[item]
+
             rgb = Image.open(str(rgb_path))
 
 
@@ -85,12 +86,12 @@ class KittiDepthDataset(Dataset):
             gt = self.transform(gt)
             rgb = self.transform(rgb)
 
-        if self.transform is None and self.setname == 'train':
-            crop_lt_u = random.randint(0, W - 720)
-            crop_lt_v = random.randint(0, H - 528)
-            data = data.crop((crop_lt_u, crop_lt_v, crop_lt_u+720, crop_lt_v+ 528))
-            gt = gt.crop((crop_lt_u, crop_lt_v, crop_lt_u + 720, crop_lt_v + 528))
-            rgb = rgb.crop((crop_lt_u, crop_lt_v, crop_lt_u + 720, crop_lt_v + 528))
+        # if self.transform is None and self.setname == 'train':
+        #     crop_lt_u = random.randint(0, W - 720)
+        #     crop_lt_v = random.randint(0, H - 528)
+        #     data = data.crop((crop_lt_u, crop_lt_v, crop_lt_u+720, crop_lt_v+ 528))
+        #     gt = gt.crop((crop_lt_u, crop_lt_v, crop_lt_u + 720, crop_lt_v + 528))
+        #     rgb = rgb.crop((crop_lt_u, crop_lt_v, crop_lt_u + 720, crop_lt_v + 528))
 
 
         if self.flip and random.randint(0, 1) and self.setname == 'train':
@@ -104,9 +105,9 @@ class KittiDepthDataset(Dataset):
 
 
         # blind
-        if self.blind and (self.setname == 'train'):
-            blind_start = random.randint(100, H - 50)
-            data[blind_start:blind_start+50, :] = 0
+        # if self.blind and (self.setname == 'train'):
+        #     blind_start = random.randint(100, H - 50)
+        #     data[blind_start:blind_start+50, :] = 0
 
         # define the certainty
         C = (data > 0).astype(float)
@@ -142,5 +143,21 @@ class KittiDepthDataset(Dataset):
         else:
             rgb = np.transpose(rgb, (2, 0, 1))
         rgb = torch.tensor(rgb, dtype=torch.float)
-        gt = 0.0
-        return data, C, gt, item, rgb
+
+        c, w, h = rgb.size()
+
+        # print("Percentage depth points in the area: ", ((torch.count_nonzero(data)/(w*h))*100))
+        flag_save_image = False
+        # print (self.data[item])
+        if '0005_sync_image_0000000086_image_02' in str(self.rgb[item]):
+            print('\n\n')
+            print("*"*60)
+            print("Number of depth points in the image: ", torch.count_nonzero(data))
+            print("Number of depth points in the grount truth: ", torch.count_nonzero(gt))
+            print("Number of points in the rgb: ", torch.count_nonzero(rgb))
+            print("Percentage gt points in the area: ", ((torch.count_nonzero(gt)/(w*h))*100), '%')
+            print("Percentage depth points in the area: ", ((torch.count_nonzero(data)/(w*h))*100), '%')
+            print("Percentage rgb points in the area: ", ((torch.count_nonzero(rgb)/(w*h*c))*100), '%')
+            print("size tensor: ", data.size(), gt.size(), rgb.size())
+            flag_save_image = True
+        return data, C, gt, item, rgb, flag_save_image

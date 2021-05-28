@@ -144,9 +144,9 @@ class DepthDecoder(nn.Module):
                         nn.init.xavier_normal_(p.weight)
                         nn.init.constant_(p.bias, 0.01)
 
-    def forward(self, pre_dx, pre_cx):
-        rgb_factor = 1.0 # default: 0.95
-        depth_factor = 1.0 # default: 1.1
+    def forward(self, pre_dx, pre_cx, weights):
+        rgb_factor = weights[0] # default: 0.95
+        depth_factor = weights[1] # default: 1.1
     	# Both RGB + Depth
         x2 = depth_factor*pre_dx[2] + rgb_factor*pre_cx[2]  # torch.cat((pre_dx[2], pre_cx[2]), 1)
         x1 = depth_factor*pre_dx[1] + rgb_factor*pre_cx[1]  # torch.cat((pre_dx[1], pre_cx[1]), 1) #
@@ -187,7 +187,7 @@ class network(nn.Module):
         self.depth_encoder3 = DepthEncoder(2, denc_layers, 3)
         self.depth_decoder3 = DepthDecoder(ddcd_layers, 3)
 
-    def forward(self, input_d, input_rgb):
+    def forward(self, input_d, input_rgb, weights):
 
         C = (input_d > 0).float()
         # print("\n\n\nDepth shape inside network: ", input_d.numel())
@@ -197,7 +197,7 @@ class network(nn.Module):
         ## for the 1/4 res
         input_d14 = F.avg_pool2d(input_d, 4, 4) / (F.avg_pool2d(C, 4, 4) + 0.0001)
         enc_d14 = self.depth_encoder1(input_d14)
-        dcd_d14 = self.depth_decoder1(enc_d14, enc_c[2:6])
+        dcd_d14 = self.depth_decoder1(enc_d14, enc_c[2:6], weights)
 
         ## for the 1/2 res
         input_d12 = F.avg_pool2d(input_d, 2, 2) / (F.avg_pool2d(C, 2, 2) + 0.0001)
@@ -205,14 +205,14 @@ class network(nn.Module):
         input_12 = torch.cat((input_d12, predict_d12), 1)
 
         enc_d12 = self.depth_encoder2(input_12, 2, dcd_d14[0], dcd_d14[1], dcd_d14[2])
-        dcd_d12 = self.depth_decoder2(enc_d12, enc_c[1:4])
+        dcd_d12 = self.depth_decoder2(enc_d12, enc_c[1:4], weights)
 
         ## for the 1/1 res
         predict_d11 = F.interpolate(dcd_d12[3] + predict_d12, scale_factor=2, mode='bilinear', align_corners=True)
         input_11 = torch.cat((input_d, predict_d11), 1)
 
         enc_d11 = self.depth_encoder3(input_11, 2, dcd_d12[0], dcd_d12[1], dcd_d12[2])
-        dcd_d11 = self.depth_decoder3(enc_d11, enc_c[0:3])
+        dcd_d11 = self.depth_decoder3(enc_d11, enc_c[0:3], weights)
 
         output_d11 = dcd_d11[3] + predict_d11
         output_d12 = predict_d11
