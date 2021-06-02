@@ -45,7 +45,6 @@ class KittiDepthTrainer(Trainer):
         self.weights = weights
         self.exp_name = params['exp_name']
         self.count = count
-
         for s in self.sets: self.stats[s + '_loss'] = []
 
     ####### Training Function #######
@@ -130,7 +129,7 @@ class KittiDepthTrainer(Trainer):
             # Iterate over data.
             for data in self.dataloaders[s]:
                 start_iter_time = time.time()
-                inputs_d, C, labels, item_idxs, inputs_rgb, flag_save_image = data
+                inputs_d, C, labels, item_idxs, inputs_rgb, flag_save_image, _ = data
                 inputs_d = inputs_d.to(device)
                 C = C.to(device)
                 labels = labels.to(device)
@@ -210,10 +209,10 @@ class KittiDepthTrainer(Trainer):
         # AverageMeters for error metrics
         err = {}
         for m in err_metrics: err[m] = AverageMeter()
-
+        # print("\n\n***** Errors ****** \n", err[m])
         # AverageMeters for time
         times = AverageMeter()
-
+        num_outliers = 0 
         device = torch.device("cuda:" + str(self.params['gpu_id']) if torch.cuda.is_available() else "cpu")
         print("CUDA ACTIVE: ", device)
         with torch.no_grad():
@@ -228,7 +227,7 @@ class KittiDepthTrainer(Trainer):
                     torch.cuda.synchronize()
                     start_time = time.time()
                     # print("HERE")
-                    inputs_d, C, labels, item_idxs, inputs_rgb, flag_save_image = data
+                    inputs_d, C, labels, item_idxs, inputs_rgb, flag_save_image, name_image = data
                     inputs_d = inputs_d.to(device)
                     C = C.to(device)
                     labels = labels.to(device)
@@ -248,9 +247,16 @@ class KittiDepthTrainer(Trainer):
 
                         # Calculate loss for valid pixel in the ground truth
                     loss = self.objective(outputs, labels, self.epoch)
-                    # print("Evaluation Loss values: ", loss)
+                    # print(loss)
                     # statistics
+                    if loss > 10000000.0:
+                        print("Image name: ", name_image)
+                        print("Original loss: ", loss)
+                        loss = torch.tensor(1000.0)
+                        num_outliers += 1
                     loss_meter[s].update(loss.item(), inputs_d.size(0))
+                    # print("Evaluation Loss values: ", loss_meter['val'].avg)
+
                     # torch.autograd.detect_anomaly()
 
                     # Convert data to depth in meters before error metrics
@@ -272,15 +278,21 @@ class KittiDepthTrainer(Trainer):
                         if m.find('Delta') >= 0:
                             fn = globals()['Deltas']()
                             error = fn(outputs, labels)
-                            err['Delta1'].update(error[0], inputs_d.size(0))
-                            err['Delta2'].update(error[1], inputs_d.size(0))
-                            err['Delta3'].update(error[2], inputs_d.size(0))
+
+                            if error < 100000.0:
+                                err['Delta1'].update(error[0], inputs_d.size(0))
+                                err['Delta2'].update(error[1], inputs_d.size(0))
+                                err['Delta3'].update(error[2], inputs_d.size(0))
                             break
                         else:
+
                             fn = eval(m)  # globals()[m]()
                             error = fn(outputs, labels)
-                            err[m].update(error.item(), inputs_d.size(0))
-
+                            if error < 100000.0:
+                                err[m].update(error.item(), inputs_d.size(0))
+                    # for m in err:
+                    #     print(m , "error values: ", err[m].avg)
+                    # print('*'*60)
                     # Save output images (optional)
 
                     # if s in ['test']:
@@ -297,36 +309,33 @@ class KittiDepthTrainer(Trainer):
                         	
                             cv_img = cv2.applyColorMap(cv_img, cv2.COLORMAP_JET)
                             cv_img[:, :, [0, 2]] = cv_img[:, :, [2, 0]]
-                            cv2.imwrite('/home/core_uc/depth_results/' + self.count + '.jpg', cv_img)
+                            cv2.imwrite('/home/core_uc/results_sunrgbd/' + self.count + '.jpg', cv_img)
                     	# i += 1
 
 
                     saveTensorToImage(outputs, item_idxs, os.path.join('/home/core_uc/depth_results_2/'))
                                                                                # self.epoch)))
-                    # i += 1
-                    # time.sleep(2)
-
                 average_time = (time.time() - Start_time) / len(self.dataloaders[s].dataset)
 
                 print('Evaluation results on [{}]:\n============================='.format(s))
-                print('[{}]: {:.8f}'.format('Loss', loss_meter[s].avg))
+                print('[{}]: {:.8f}'.format('Loss', loss_meter['val'].avg))
                 for m in err_metrics: print('[{}]: {:.8f}'.format(m, err[m].avg))
                 print('[{}]: {:.4f}'.format('Time', times.avg))
-                # print('[{}]: {:.4f}'.format('Time_av', average_time))
+                print('[{}]: {:.4f}'.format('Time_av', average_time))
 
                 # Save evaluation metric to text file
-                fname = '/home/core_uc/results_ablation_study/error_ablation_study_kitti.txt'
+                fname = '/home/core_uc/results_sunrgbd/error_ablation_study_sunrgbd.txt'
                 with open(os.path.join(self.workspace_dir, fname), 'a') as text_file:
                     text_file.write(
-                        '\nEvaluation results on [{}], KITTI [{}]:\n==========================================\n'.format(
+                        '\nEvaluation results on [{}], SUN RGBD [{}]:\n==========================================\n'.format(
                             s, str(self.count)))
                     text_file.write('[{}]: {:.8f}\n'.format('RGB Weight', self.weights[0]))
                     text_file.write('[{}]: {:.8f}\n'.format('Depth Weight', self.weights[1]))
 
-                    text_file.write('[{}]: {:.8f}\n'.format('Loss', loss_meter[s].avg))
+                    text_file.write('[{}]: {:.8f}\n'.format('Loss', loss_meter['val'].avg))
                     for m in err_metrics: text_file.write('[{}]: {:.8f}\n'.format(m, err[m].avg))
                     text_file.write('[{}]: {:.4f}\n'.format('Time', times.avg))
-
+                print('Number of outliers: ', num_outliers)
                 torch.cuda.empty_cache()
 
 

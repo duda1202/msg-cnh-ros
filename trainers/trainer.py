@@ -101,12 +101,15 @@ class Trainer(object):
         # To eliminate "module from saved dict for cuda different from parallel"
         if checkpoint != None:
             state_dict = torch.load(checkpoint_path)
+            # print (state_dict)
             # create new OrderedDict that does not contain `module.`
             from collections import OrderedDict
             checkpoint_dict = OrderedDict()
             for k, v in state_dict['net'].items():
+                print(k)
                 name = k[7:] # remove `module.`
-                checkpoint_dict[name] = v
+                print(name)
+                checkpoint_dict[k] = v
                 # print(new_state_dict)
 
         # checkpoint_dict = torch.load(checkpoint_path, map_location=device)

@@ -33,4 +33,6 @@ class MSELoss(nn.Module):
     def forward(self, outputs, target, *args):
         val_pixels = torch.ne(target, 0).float().cuda()
         loss = target * val_pixels - outputs * val_pixels
+        # print("Value pixels: ", val_pixels)
+        # print("MSE Loss: ", loss)
         return torch.sum(loss ** 2) / torch.sum(val_pixels)

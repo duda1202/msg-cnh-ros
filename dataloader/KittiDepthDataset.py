@@ -41,7 +41,7 @@ class KittiDepthDataset(Dataset):
         print("Lbl Dir: ", self.gt_path)
         self.data = list(sorted(glob.iglob(self.data_path + "/*.png", recursive=True)))
         self.gt = list(sorted(glob.iglob(self.gt_path + "/*.png", recursive=True)))
-        self.rgb = list(sorted(glob.iglob(self.rgb_dir + "/*.png", recursive=True)))
+        self.rgb = list(sorted(glob.iglob(self.rgb_dir + "/*.jpg", recursive=True)))
         assert (len(self.gt) == len(self.data))
         print("Number of depth images: ", len(self.data))
         print("Number of rgb images: ", len(self.rgb))
@@ -149,7 +149,7 @@ class KittiDepthDataset(Dataset):
         # print("Percentage depth points in the area: ", ((torch.count_nonzero(data)/(w*h))*100))
         flag_save_image = False
         # print (self.data[item])
-        if '0005_sync_image_0000000086_image_02' in str(self.rgb[item]):
+        if '4736.jpg' in str(self.rgb[item]):
             print('\n\n')
             print("*"*60)
             print("Number of depth points in the image: ", torch.count_nonzero(data))
@@ -160,4 +160,4 @@ class KittiDepthDataset(Dataset):
             print("Percentage rgb points in the area: ", ((torch.count_nonzero(rgb)/(w*h*c))*100), '%')
             print("size tensor: ", data.size(), gt.size(), rgb.size())
             flag_save_image = True
-        return data, C, gt, item, rgb, flag_save_image
+        return data, C, gt, item, rgb, flag_save_image, self.rgb[item]

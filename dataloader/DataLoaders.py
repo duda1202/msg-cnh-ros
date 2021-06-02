@@ -46,8 +46,8 @@ def KittiDataLoader(params):
 
     # print(train_data_path)
     if params['transform_type'] == 'center':
-        train_transform = transforms.Compose([transforms.CenterCrop((352, 1216))])
-        # train_transform = transforms.Compose([transforms.CenterCrop((528, 720))]) # Needs to be multiple of 16 -- sun rgbd
+        # train_transform = transforms.Compose([transforms.CenterCrop((352, 1216))])
+        train_transform = transforms.Compose([transforms.CenterCrop((528, 720))]) # Needs to be multiple of 16 -- sun rgbd
 
     else:
         train_transform = None
@@ -73,8 +73,8 @@ def KittiDataLoader(params):
     val_rgb_path = os.path.join(rgb_dir)
 
     # val_transform = transforms.Compose([transforms.CenterCrop((720, 848))]) # Needs to be multiple of 16 -- semfire dataset
-    # val_transform = transforms.Compose([transforms.CenterCrop((528, 720))]) # Needs to be multiple of 16 -- sun rgbd
-    val_transform = transforms.Compose([transforms.CenterCrop((352, 1216))]) # Needs to be multiple of 16 -- kitti dataset
+    val_transform = transforms.Compose([transforms.CenterCrop((528, 720))]) # Needs to be multiple of 16 -- sun rgbd
+    # val_transform = transforms.Compose([transforms.CenterCrop((352, 1216))]) # Needs to be multiple of 16 -- kitti dataset
     # val_transform = transforms.Compose([transforms.CenterCrop((352, 1216))]) # Needs to be multiple of 16 -- kitti dataset
 
     image_datasets['val'] = eval(dataset)(val_data_path, val_gt_path, setname='val', transform=val_transform,
